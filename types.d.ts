@@ -19,3 +19,5 @@ export interface VDOMText {
 export type VDomNode = VDOMText | VDOMElement;
 
 export type SetState<T> = (newValue: T) => void;
+
+export type PromiseFunction<T> = () => Promise<T>;
