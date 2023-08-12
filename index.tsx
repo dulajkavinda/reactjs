@@ -1,28 +1,45 @@
+import { SetState, VDOMAttributes, VDOMElement, VDomNode } from "./types";
+
 let React = {
-  createElement: (tag: any, props: any, ...children: any) => {
+  createElement: (
+    tag: string | Function,
+    props: VDOMAttributes & { key: string },
+    ...childeren: VDomNode[]
+  ): VDOMElement => {
     if (typeof tag === "function") {
       return tag();
     }
-    const element = { tag, props: { ...props, children } };
+    const element: VDOMElement = {
+      kind: "element",
+      tagname: tag,
+      props,
+      childeren,
+      key: props.key,
+    };
+
     return element;
   },
 };
 
-const states = [];
+const states: any[] = [];
 let cursor = 0;
 
-const useState = (initialValue: any) => {
+function useState<T>(initialValue: T): [T, SetState<T>] {
   const FROZEN_CURSOR = cursor;
-  states[FROZEN_CURSOR] = states[FROZEN_CURSOR] || initialValue;
-  const setState = (newValue: any) => {
+  if (states[FROZEN_CURSOR] === undefined) {
+    states[FROZEN_CURSOR] = initialValue;
+  }
+
+  const setState: SetState<T> = (newValue: T) => {
     states[FROZEN_CURSOR] = newValue;
     rerender();
   };
-  return [states[FROZEN_CURSOR], setState];
-};
 
-const App = () => {
-  const [name, setName] = useState("person");
+  return [states[FROZEN_CURSOR] as T, setState];
+}
+
+function App() {
+  const [name, setName] = useState<string>("person");
 
   return (
     <div className="hello-classname">
@@ -37,15 +54,15 @@ const App = () => {
       <p>Hello, from P!</p>
     </div>
   );
-};
+}
 
-const render = (reactElement: any, container: any) => {
+function render(reactElement: VDOMElement, container: HTMLElement): void {
   if (["string", "number"].includes(typeof reactElement)) {
     container.appendChild(document.createTextNode(String(reactElement)));
     return;
   }
 
-  const actualDomElement = document.createElement(reactElement.tag);
+  const actualDomElement = document.createElement(reactElement.tagname);
 
   if (reactElement.props) {
     Object.keys(reactElement.props)
@@ -53,19 +70,19 @@ const render = (reactElement: any, container: any) => {
       .forEach((key) => (actualDomElement[key] = reactElement.props[key]));
   }
 
-  if (reactElement.props.children) {
-    reactElement.props.children.forEach((child: any) =>
+  if (reactElement.childeren) {
+    reactElement.childeren.forEach((child: VDOMElement) =>
       render(child, actualDomElement)
     );
   }
 
   container.appendChild(actualDomElement);
-};
+}
 
-const rerender = () => {
+function rerender(): void {
   cursor = 0;
   document.querySelector("#app").firstChild.remove();
   render(<App />, document.querySelector("#app"));
-};
+}
 
 render(<App />, document.querySelector("#app"));
